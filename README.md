@@ -1,10 +1,12 @@
 # README #
 
-<Add info here>
+See solidDoWant/Planetbase wiki for more info.
 
 ------------------------------------------------------
 
 Credits:
+
+[João Farias](https://bitbucket.org/joaofarias/planetbase-modding/overview) for maintaining the mod patcher up to Planetbase 1.1.
 
 [PiMaker](https://github.com/PiMaker) for the original version of the Mod Patcher that can be found [here](https://github.com/PiMaker/PlanetbasePatcher).
 
