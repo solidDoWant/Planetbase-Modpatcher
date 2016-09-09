@@ -1,0 +1,36 @@
+﻿namespace Patcher
+{
+    enum DirectiveEnum
+    {
+        ROOT,
+        Assembly,
+        Class,
+        Corflags,
+        Custom,
+        Data,
+        Entrypoint,
+        Event,
+        Field,
+        File,
+        Get,
+        Hash,
+        Imagebase,
+        Locals,
+        Maxstack,
+        Method,
+        Module,
+        Mresource,
+        Override,
+        Pack,
+        Param,
+        Property,
+        Publickeytoken,
+        Set,
+        Size,
+        Subsystem,
+        Stackreserve,
+        Try,
+        Ver,
+        Vtfixup
+    }
+}
