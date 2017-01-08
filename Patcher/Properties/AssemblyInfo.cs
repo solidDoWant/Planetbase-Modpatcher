@@ -10,7 +10,7 @@ using System.Windows;
 [assembly: AssemblyTitle("Patcher")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("")]
+[assembly: AssemblyCompany("solidDoWant")]
 [assembly: AssemblyProduct("Patcher")]
 [assembly: AssemblyCopyright("Copyright ©  2015")]
 [assembly: AssemblyTrademark("")]

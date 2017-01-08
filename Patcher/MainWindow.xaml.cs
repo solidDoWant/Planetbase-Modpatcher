@@ -15,7 +15,7 @@
     public partial class MainWindow : Window
     {
         private const string PRE_PATCHER_VERSION = "ldstr      \"1.";
-        private const string PATCHER_VERSION = @"[P]";
+        private const string PATCHER_VERSION = @"[P 2.0]";
 
         private const string PRE_LOAD_MODS = @"call       void Planetbase.GameManager::initQualitySettings()";
         private const string LOAD_MODS = @"call void Planetbase.GameManager::loadMods()";
@@ -26,23 +26,7 @@
         private const string UPDATE_MODS = @"call void Planetbase.GameManager::updateMods()";
 
         private const string PRE_MODS_FIELD = @".field public notserialized static class Planetbase.GameManager mInstance";
-        private const string MODS_FIELD = @".field public static class [mscorlib]System.Collections.Generic.List`1<class Planetbase.IMod> modList";
-
-        private const string PRE_IMOD = @".class public auto ansi beforefieldinit Planetbase.GameManager";
-        private const string IMOD = @".class interface public auto ansi abstract Planetbase.IMod
-{
-	// Methods
-	.method public hidebysig newslot abstract virtual 
-		instance void Init () cil managed 
-	{
-	} // end of method IMod::Init
-
-	.method public hidebysig newslot abstract virtual 
-		instance void Update () cil managed 
-	{
-	} // end of method IMod::Update
-
-} // end of class Planetbase.IMod";
+        private const string MODS_FIELD = @".field public static class [mscorlib]System.Collections.Generic.List`1<class [PlanetbaseFramework]PlanetbaseFramework.ModBase> modList";
 
         private const string PRE_MOD_FUNCS = @"} // end of class Planetbase.GameManager";
         private const string MOD_FUNCS = @".method public hidebysig static 
@@ -58,12 +42,12 @@
 			[3] int32,
 			[4] class [mscorlib]System.Type[],
 			[5] int32,
-			[6] class Planetbase.IMod,
+			[6] class [PlanetbaseFramework]PlanetbaseFramework.ModBase,
 			[7] class [mscorlib]System.Exception
 		)
 
-		IL_0000: newobj instance void class [mscorlib]System.Collections.Generic.List`1<class Planetbase.IMod>::.ctor()
-		IL_0005: stsfld class [mscorlib]System.Collections.Generic.List`1<class Planetbase.IMod> Planetbase.GameManager::modList
+		IL_0000: newobj instance void class [mscorlib]System.Collections.Generic.List`1<class [PlanetbaseFramework]PlanetbaseFramework.ModBase>::.ctor()
+		IL_0005: stsfld class [mscorlib]System.Collections.Generic.List`1<class [PlanetbaseFramework]PlanetbaseFramework.ModBase> Planetbase.GameManager::modList
 		IL_000a: call string Planetbase.Util::getFilesFolder()
 		IL_000f: ldsfld char [mscorlib]System.IO.Path::DirectorySeparatorChar
 		IL_0014: stloc.1
@@ -97,7 +81,7 @@
 			IL_005b: stloc.s 5
 			IL_005d: br.s IL_00ca
             // loop start (head: IL_00ca)
-        IL_005f: ldtoken Planetbase.IMod
+        IL_005f: ldtoken [PlanetbaseFramework]PlanetbaseFramework.ModBase
                 IL_0064: call class [mscorlib]
         System.Type[mscorlib] System.Type::GetTypeFromHandle(valuetype[mscorlib] System.RuntimeTypeHandle)
                 IL_0069: ldloc.s 4
@@ -113,17 +97,17 @@
                     IL_0079: ldelem.ref
 					IL_007a: call object[mscorlib] System.Activator::CreateInstance(class [mscorlib]
         System.Type)
-					IL_007f: isinst Planetbase.IMod
+					IL_007f: isinst [PlanetbaseFramework]PlanetbaseFramework.ModBase
                     IL_0084: stloc.s 6
                     IL_0086: ldloc.s 6
-                    IL_0088: callvirt instance void Planetbase.IMod::Init()
+                    IL_0088: callvirt instance void [PlanetbaseFramework]PlanetbaseFramework.ModBase::Init()
                     IL_008d: ldsfld class [mscorlib]
         System.Collections.Generic.List`1<class 
-        Planetbase.IMod> Planetbase.GameManager::modList
+        [PlanetbaseFramework]PlanetbaseFramework.ModBase> Planetbase.GameManager::modList
 IL_0092: ldloc.s 6
 					IL_0094: callvirt instance void class [mscorlib]
         System.Collections.Generic.List`1<class 
-        Planetbase.IMod>::Add(!0)
+        [PlanetbaseFramework]PlanetbaseFramework.ModBase>::Add(!0)
                     IL_0099: leave.s IL_00c4
                 } // end .try
 				catch [mscorlib]
@@ -187,13 +171,13 @@ IL_00df: ret
            // loop start (head: IL_0018)
            IL_0004: ldsfld class [mscorlib]
 System.Collections.Generic.List`1<class 
-Planetbase.IMod> Planetbase.GameManager::modList
+[PlanetbaseFramework]PlanetbaseFramework.ModBase> Planetbase.GameManager::modList
 IL_0009: ldloc.0
 			IL_000a: callvirt instance !0 class [mscorlib]
 System.Collections.Generic.List`1<class 
-Planetbase.IMod>::get_Item(int32)
+[PlanetbaseFramework]PlanetbaseFramework.ModBase>::get_Item(int32)
             IL_000f: callvirt instance void
-Planetbase.IMod::Update()
+[PlanetbaseFramework]PlanetbaseFramework.ModBase::Update()
 			IL_0014: ldloc.0
 			IL_0015: ldc.i4.1
 			IL_0016: add
@@ -202,10 +186,10 @@ Planetbase.IMod::Update()
 			IL_0018: ldloc.0
 			IL_0019: ldsfld class [mscorlib]
 System.Collections.Generic.List`1<class 
-Planetbase.IMod> Planetbase.GameManager::modList
+[PlanetbaseFramework]PlanetbaseFramework.ModBase> Planetbase.GameManager::modList
 IL_001e: callvirt instance int32 class [mscorlib]
 System.Collections.Generic.List`1<class 
-Planetbase.IMod>::get_Count()
+[PlanetbaseFramework]PlanetbaseFramework.ModBase>::get_Count()
             IL_0023: blt.s IL_0004
         // end loop
 
@@ -292,7 +276,7 @@ IL_0025: ret
 
             if (File.Exists("Assembly-CSharp.il"))
             {
-                File.Delete("Assembly-CSharp.il");
+                //File.Delete("Assembly-CSharp.il");
             }
 
             if (File.Exists("Assembly-CSharp.res"))
@@ -302,7 +286,7 @@ IL_0025: ret
 
             if (File.Exists("Assembly-CSharp-orig.il"))
             {
-                File.Delete("Assembly-CSharp-orig.il");
+                //File.Delete("Assembly-CSharp-orig.il");
             }
 
             this.buttonPatch.Content = "Decompiling...";
@@ -314,8 +298,8 @@ IL_0025: ret
 
             Console.WriteLine("BUILDING GRAPH");
 
-            MSILNode rootNode = new MSILNode();
-            rootNode.parseString(File.ReadAllText("Assembly-CSharp-orig.il"));
+           // MSILNode rootNode = new MSILNode();
+           // rootNode.parseString(File.ReadAllText("Assembly-CSharp-orig.il"));
 
             Console.WriteLine("READ ALL DATA");
 
@@ -370,6 +354,36 @@ IL_0025: ret
                         line = line.Replace("call    ", "callvirt");
                     }
 
+                    if(line.Contains(".assembly extern UnityEngine.UI"))
+                    {
+                        await writer.WriteLineAsync(line);
+                        await writer.WriteLineAsync(await reader.ReadLineAsync());  //Skip 3 lines
+                        await writer.WriteLineAsync(await reader.ReadLineAsync());
+                        await writer.WriteLineAsync(await reader.ReadLineAsync());
+
+                        await writer.WriteLineAsync(".assembly extern PlanetbaseFramework");
+                        await writer.WriteLineAsync("{");
+                        //await writer.WriteLineAsync("  .ver 1:0:0:0");
+                        await writer.WriteLineAsync("}");
+                        
+                        continue;
+                    }
+
+                    if(line.Contains("setGameStateTitle() cil managed"))
+                    {
+                        await writer.WriteLineAsync(line);
+                        await writer.WriteLineAsync(await reader.ReadLineAsync());
+                        await writer.WriteLineAsync(await reader.ReadLineAsync());
+                        await writer.WriteLineAsync(await reader.ReadLineAsync());
+                        await writer.WriteLineAsync(await reader.ReadLineAsync());
+                        await writer.WriteLineAsync(await reader.ReadLineAsync());
+                        await writer.WriteLineAsync(await reader.ReadLineAsync());
+                        string nextLine = await reader.ReadLineAsync();
+                        nextLine = nextLine.Replace("Planetbase.GameStateTitle", "[PlanetbaseFramework]PlanetbaseFramework.GameStateTitleReplacement");
+                        await writer.WriteLineAsync(nextLine);
+                        continue;
+                    }
+
                     // Init mods
                     if (line.Contains(PRE_LOAD_MODS))
                     {
@@ -399,14 +413,6 @@ IL_0025: ret
                     {
                         await writer.WriteLineAsync(line);
                         await writer.WriteLineAsync(MODS_FIELD);
-                        continue;
-                    }
-
-                    // IMod
-                    if (line.Contains(PRE_IMOD))
-                    {
-                        await writer.WriteLineAsync(IMOD);
-                        await writer.WriteLineAsync(line);
                         continue;
                     }
 
@@ -499,7 +505,7 @@ IL_0025: ret
                 () =>
                     {
                         //File.Delete("Assembly-CSharp.il");
-                        File.Delete("Assembly-CSharp-orig.il");
+                        //File.Delete("Assembly-CSharp-orig.il");
                         File.Delete("Assembly-CSharp-orig.res");
                         File.Delete("fusion.dll");
                         File.Delete("ilasm.exe");
