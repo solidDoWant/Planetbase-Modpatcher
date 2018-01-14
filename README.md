@@ -1,6 +1,6 @@
 # README #
 
-See solidDoWant/Planetbase wiki for more info.
+See [solidDoWant/Planetbase-Framework wiki](https://github.com/solidDoWant/Planetbase-Framework/wiki) for more info.
 
 ------------------------------------------------------
 
