@@ -16,7 +16,7 @@
     public partial class MainWindow : Window
     {
         private const string PRE_PATCHER_VERSION = "ldstr      \"1.";
-        private const string PATCHER_VERSION = @"[P 2.1]";
+        private const string PATCHER_VERSION = @"[P 2.1.1]";
 
         private const string PRE_LOAD_MODS = @"call       void Planetbase.GameManager::initQualitySettings()";
         private const string LOAD_MODS = @"call void [PlanetbaseFramework]PlanetbaseFramework.Modloader::LoadMods()";
@@ -235,6 +235,12 @@
                         line = line.Substring(0, line.Length - 1) + PATCHER_VERSION + "\"";
                     }
 
+                    //Removes readonly attributes
+                    if (line.Contains("initonly "))
+                    {
+                        line = line.Replace("initonly ", "");
+                    }
+
                     await writer.WriteLineAsync(line);
                 }
             }
@@ -278,10 +284,12 @@
                 await labelDll.Dispatcher.InvokeAsync(() => { File.Copy(labelDll.Text, bckPath); });
             }
 
-            buttonPatch.Content = "Installing ML...";
+            buttonPatch.Content = "Installing patched file...";
 
-            await labelDll.Dispatcher.InvokeAsync(
-                () =>
+            try
+            {
+                await labelDll.Dispatcher.InvokeAsync(
+                    () =>
                     {
                         if (File.Exists(labelDll.Text))
                         {
@@ -290,6 +298,13 @@
 
                         File.Move("Assembly-CSharp.dll", labelDll.Text);
                     });
+            }
+            catch (Exception)
+            {
+                buttonPatch.Content = "Error compiling patched MSIL";
+                MessageBox.Show(this, "Error compiling patched MSIL");
+                return;
+            }
 
             buttonPatch.Content = "Creating Mods-Folder...";
 
