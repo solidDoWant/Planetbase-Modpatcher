@@ -105,10 +105,11 @@ namespace PatcherTest
             ProgressBar.Value = 0;
             SetButtonsEnabled(false);
 
-            //Do some file existence checking
-            //if (!ValidateAssemblyCSharpFileOrDirectory()) return;
-
-            if (!RestoreAssemblyCSharp()) return;
+            if (!RestoreAssemblyCSharp())
+            {
+                SetButtonsEnabled(true);
+                return;
+            }
 
             SetButtonsEnabled(true);
             ProgressBar.Value = ProgressBar.Maximum;
@@ -214,14 +215,20 @@ namespace PatcherTest
                 {
                     if (downloadE.Error != null) throw downloadE.Error;
 
-                    using (var downloadedFile = ZipFile.OpenRead(downloadFilePath))
+                    using (var downloadedFileStream = new FileStream(downloadFilePath, FileMode.Open))
+                    using(var archive = new ZipArchive(downloadedFileStream, ZipArchiveMode.Read))
                     {
-                        foreach (var entry in downloadedFile.Entries)
+                        foreach (var entry in archive.Entries)
                         {
                             var newFilePath = AssemblyFolder + entry.FullName;
                             if (File.Exists(newFilePath)) File.Delete(newFilePath);
 
-                            entry.ExtractToFile(newFilePath, true);
+                            using (var entryStream = entry.Open())
+                            using(var extractedFileStream = File.Create(newFilePath))
+                            {
+                                entryStream.CopyTo(extractedFileStream);
+                                extractedFileStream.Close();
+                            }
                         }
                     }
                 }
@@ -277,9 +284,13 @@ namespace PatcherTest
                 if(File.Exists(DefaultBackupFile)) File.Delete(DefaultBackupFile);
                 File.Copy(AssemblyPathBox.Text, DefaultBackupFile);
 
+                //Add folders to resolver path
+                var resolver = new DefaultAssemblyResolver();
+                resolver.AddSearchDirectory(Path.GetDirectoryName(AssemblyFolder));
+
                 //Add reference to framework
                 using (var planetbaseModule = ModuleDefinition.ReadModule(AssemblyPathBox.Text))
-                using (var frameworkAssembly = AssemblyDefinition.ReadAssembly(frameworkPath))
+                using (var frameworkAssembly = AssemblyDefinition.ReadAssembly(frameworkPath, new ReaderParameters { AssemblyResolver = resolver }))
                 {
                     frameworkAssembly.Name.Version = new Version(0, 0, 0, 0);
                     var frameworkModule = frameworkAssembly.MainModule;
