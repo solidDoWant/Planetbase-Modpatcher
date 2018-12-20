@@ -8,6 +8,7 @@ using System.Web.Script.Serialization;
 using System.Windows.Forms;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
+using Patcher;
 
 namespace PatcherTest
 {
@@ -285,11 +286,11 @@ namespace PatcherTest
                 File.Copy(AssemblyPathBox.Text, DefaultBackupFile);
 
                 //Add folders to resolver path
-                var resolver = new DefaultAssemblyResolver();
+                var resolver = new PBResolver(FirstPassPathBox.Text, UnityEnginePathBox.Text, UIPathBox.Text);
                 resolver.AddSearchDirectory(Path.GetDirectoryName(AssemblyFolder));
 
                 //Add reference to framework
-                using (var planetbaseModule = ModuleDefinition.ReadModule(AssemblyPathBox.Text))
+                using (var planetbaseModule = ModuleDefinition.ReadModule(AssemblyPathBox.Text, new ReaderParameters { AssemblyResolver = resolver }))
                 using (var frameworkAssembly = AssemblyDefinition.ReadAssembly(frameworkPath, new ReaderParameters { AssemblyResolver = resolver }))
                 {
                     frameworkAssembly.Name.Version = new Version(0, 0, 0, 0);
@@ -401,8 +402,12 @@ namespace PatcherTest
                     mscorlibReference.PublicKeyToken = null;
 
                     //Save the file
-                    planetbaseModule.Write("Assembly-CSharp2.dll");
+                    planetbaseModule.Write($"{AssemblyFolder}Assembly-CSharp-Patched.dll");
                 }
+
+                //Replace the file
+                File.Delete(AssemblyPathBox.Text);
+                File.Move($"{AssemblyFolder}Assembly-CSharp-Patched.dll", AssemblyPathBox.Text);
             }
             catch (InvalidOperationException)
             {
