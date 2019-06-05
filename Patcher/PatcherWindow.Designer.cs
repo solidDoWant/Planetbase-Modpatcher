@@ -1,4 +1,4 @@
-﻿namespace PatcherTest
+﻿namespace Patcher
 {
     partial class PatcherWindow
     {

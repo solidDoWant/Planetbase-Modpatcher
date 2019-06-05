@@ -6,31 +6,29 @@ using System.Linq;
 using System.Net;
 using System.Web.Script.Serialization;
 using System.Windows.Forms;
-using Mono.Cecil;
-using Mono.Cecil.Cil;
-using Patcher;
 
-namespace PatcherTest
+namespace Patcher
 {
     public partial class PatcherWindow : Form
     {
-        private string AssemblyFolder {
-            get
-            {
-                if (string.IsNullOrWhiteSpace(AssemblyPathBox.Text))
-                {
-                    return null;
-                }
-
-                return Path.GetDirectoryName(AssemblyPathBox.Text) + Path.DirectorySeparatorChar;
-            }
-        } 
-        private string DefaultBackupFile => $"{AssemblyFolder}{Path.GetFileNameWithoutExtension(AssemblyPathBox.Text)}.bak";
-
         public PatcherWindow()
         {
             InitializeComponent();
         }
+
+        private string AssemblyFolder
+        {
+            get
+            {
+                if (string.IsNullOrWhiteSpace(AssemblyPathBox.Text))
+                    return null;
+
+                return Path.GetDirectoryName(AssemblyPathBox.Text) + Path.DirectorySeparatorChar;
+            }
+        }
+
+        private string DefaultBackupFile =>
+            $"{AssemblyFolder}{Path.GetFileNameWithoutExtension(AssemblyPathBox.Text)}.bak";
 
         private void SelectAssemblyButton_Click(object sender, EventArgs e)
         {
@@ -78,20 +76,20 @@ namespace PatcherTest
             }
         }
 
-        private static OpenFileDialog OpenPBFileDialog(string fileName)
+        private static OpenFileDialog OpenPbFileDialog(string fileName)
         {
             return new OpenFileDialog
             {
-                Filter = $"{fileName}|{fileName}",
+                Filter = $@"{fileName}|{fileName}",
                 Multiselect = false,
-                Title = $"Select the {fileName} file",
+                Title = $@"Select the {fileName} file",
                 InitialDirectory = @"C:\Program Files (x86)\Steam\steamapps\common\Planetbase\Planetbase_Data\Managed"
             };
         }
 
         private static bool BrowseButtonClick(string fileName, TextBox pathBox)
         {
-            var assemblyDialog = OpenPBFileDialog(fileName);
+            var assemblyDialog = OpenPbFileDialog(fileName);
 
             if (assemblyDialog.ShowDialog() != DialogResult.OK) return false;
 
@@ -123,7 +121,7 @@ namespace PatcherTest
 
             if (!File.Exists(DefaultBackupFile))
             {
-                var backupFileDialog = OpenPBFileDialog("Assembly-CSharp.bak");
+                var backupFileDialog = OpenPbFileDialog("Assembly-CSharp.bak");
 
                 if (backupFileDialog.ShowDialog() != DialogResult.OK) return false;
 
@@ -200,9 +198,9 @@ namespace PatcherTest
                 dynamic deserializedJson = new JavaScriptSerializer().DeserializeObject(
                     client.DownloadString(
                         "https://api.github.com/repos/soliddowant/planetbase-framework/releases/latest"));
-                string frameworkUrl = //TODO make fewer assumptions here
+                string frameworkUrl =
                     ((dynamic[]) deserializedJson["assets"]).FirstOrDefault(asset =>
-                        asset["content_type"].Equals("application/x-zip-compressed"))["browser_download_url"];
+                        asset["content_type"].Equals("application/x-zip-compressed"))?["browser_download_url"];
 
                 //Download and extract the file
                 if (File.Exists(downloadFilePath)) File.Delete(downloadFilePath);
@@ -217,7 +215,7 @@ namespace PatcherTest
                     if (downloadE.Error != null) throw downloadE.Error;
 
                     using (var downloadedFileStream = new FileStream(downloadFilePath, FileMode.Open))
-                    using(var archive = new ZipArchive(downloadedFileStream, ZipArchiveMode.Read))
+                    using (var archive = new ZipArchive(downloadedFileStream, ZipArchiveMode.Read))
                     {
                         foreach (var entry in archive.Entries)
                         {
@@ -225,7 +223,7 @@ namespace PatcherTest
                             if (File.Exists(newFilePath)) File.Delete(newFilePath);
 
                             using (var entryStream = entry.Open())
-                            using(var extractedFileStream = File.Create(newFilePath))
+                            using (var extractedFileStream = File.Create(newFilePath))
                             {
                                 entryStream.CopyTo(extractedFileStream);
                                 extractedFileStream.Close();
@@ -264,13 +262,15 @@ namespace PatcherTest
             ProgressBar.Value = 0;
             SetButtonsEnabled(false);
 
-            if (!File.Exists(AssemblyPathBox.Text))
+            var assemblyPath = AssemblyPathBox.Text;
+
+            if (!File.Exists(assemblyPath))
             {
                 Fail("Could not find Assembly-CSharp.dll. Please update the file's path and try again.");
                 return;
             }
 
-            var frameworkPath = $"{AssemblyFolder}PlanetbaseFramework.dll";
+            var frameworkPath = Path.Combine(AssemblyFolder, "PlanetbaseFramework.dll");
 
             if (!File.Exists(frameworkPath))
             {
@@ -278,136 +278,33 @@ namespace PatcherTest
                 return;
             }
 
+            var patchedAssemblyPath = Path.Combine(AssemblyFolder, "Assembly-CSharp-Patched.dll");
+
+            if (File.Exists(frameworkPath))
+                File.Delete(patchedAssemblyPath);
+
             //Patch the DLL
             try
             {
                 //Backup the file
-                if(File.Exists(DefaultBackupFile)) File.Delete(DefaultBackupFile);
-                File.Copy(AssemblyPathBox.Text, DefaultBackupFile);
+                if (File.Exists(DefaultBackupFile))
+                    File.Delete(DefaultBackupFile);
 
-                //Add folders to resolver path
-                var resolver = new PBResolver(FirstPassPathBox.Text, UnityEnginePathBox.Text, UIPathBox.Text);
-                resolver.AddSearchDirectory(Path.GetDirectoryName(AssemblyFolder));
+                File.Copy(assemblyPath, DefaultBackupFile);
 
-                //Add reference to framework
-                using (var planetbaseModule = ModuleDefinition.ReadModule(AssemblyPathBox.Text, new ReaderParameters { AssemblyResolver = resolver }))
-                using (var frameworkAssembly = AssemblyDefinition.ReadAssembly(frameworkPath, new ReaderParameters { AssemblyResolver = resolver }))
-                {
-                    frameworkAssembly.Name.Version = new Version(0, 0, 0, 0);
-                    var frameworkModule = frameworkAssembly.MainModule;
-
-                    var gameManagerType =
-                        planetbaseModule.Types.First(type => type.FullName.Equals("Planetbase.GameManager"));
-
-                    planetbaseModule.AssemblyReferences.Add(frameworkAssembly.Name);
-
-                    //Add call to mod loader initialization method
-                    var gameMangerConstructor = gameManagerType.Methods.First(method =>
-                        method.FullName.Equals("System.Void Planetbase.GameManager::.ctor()"));
-
-                    var modLoadType =
-                        frameworkModule.Types.First(type => type.FullName.Equals("PlanetbaseFramework.Modloader"));
-                    var loadModMethodDefinition = modLoadType.Methods.First(method => method.Name.Equals("LoadMods"));
-
-                    var planetbaseScopeLoadModMethodDefinition =
-                        planetbaseModule.ImportReference(loadModMethodDefinition);
-
-                    var loadModInstruction = Instruction.Create(OpCodes.Call, planetbaseScopeLoadModMethodDefinition);
-
-                    gameMangerConstructor.Body.Instructions.Insert(gameMangerConstructor.Body.Instructions.Count - 1,
-                        loadModInstruction);
-
-                    //Add call to mod loader update method
-                    var updateMethod = gameManagerType.Methods.First(method => method.Name.Equals("update"));
-
-                    var updateModMethodDefinition =
-                        modLoadType.Methods.First(method => method.Name.Equals("UpdateMods"));
-
-                    var planetbaseScopeUpdateModMethodDefinition =
-                        planetbaseModule.ImportReference(updateModMethodDefinition);
-
-                    var updateModInstruction =
-                        Instruction.Create(OpCodes.Call, planetbaseScopeUpdateModMethodDefinition);
-
-                    updateMethod.Body.Instructions.Insert(updateMethod.Body.Instructions.Count - 1,
-                        updateModInstruction);
-
-                    //Update the version number
-                    var definitionsType = planetbaseModule.Types.First(type => type.Name.Equals("Definitions"));
-                    definitionsType.Fields.First(field => field.Name.Equals("VersionNumber")).Constant += "[P 2.3]";
-
-                    //Make all fields public
-                    var fields = planetbaseModule.Types
-                        .Where(type => type.Namespace.Equals("Planetbase") && type.HasFields) //Get all types
-                        .SelectMany(type => type.Fields).ToList(); //Get all fields
-
-                    var privateFields = fields.Where(field => !field.IsPublic);
-
-                    foreach (var field in privateFields)
-                    {
-                        field.IsPublic = true;
-                    }
-
-                    foreach (var field in fields)
-                    {
-                        field.HasConstant = false;
-                    }
-
-                    //Make all methods public
-                    var privateMethods = planetbaseModule.Types
-                        .Where(type => type.Namespace.Equals("Planetbase") && type.HasMethods) //Get all types
-                        .SelectMany(type => type.Methods) //Get all methods
-                        .Where(methods => !methods.IsPublic); //Get all private methods
-
-                    foreach (var method in privateMethods)
-                    {
-                        method.IsPublic = true;
-                    }
-
-                    //Add hooks for prefab replacement
-                    var moduleTypeLoadPrefabMethod = planetbaseModule.GetType("Planetbase", "ModuleType").Methods
-                        .First(method => method.Name.Equals("loadPrefab"));
-                    moduleTypeLoadPrefabMethod.IsVirtual = true;
-
-                    //Add hooks for new menu item
-                    var setGameStateTitleMethod = gameManagerType.Methods
-                        .First(method => method.Name.Equals("setGameStateTitle"));
-
-                    var titleGameStateReplacementConstructor = frameworkAssembly.MainModule.Types.First(type =>
-                            type.FullName.Equals("PlanetbaseFramework.GameStateTitleReplacement")).Methods
-                        .First(method => method.Name.Equals(".ctor"));
-
-                    var planetbaseScopeTitleGameStateReplacementConstructor =
-                        planetbaseModule.ImportReference(titleGameStateReplacementConstructor);
-
-                    setGameStateTitleMethod.Body.Instructions
-                            .First(instruction => instruction.OpCode == OpCodes.Newobj).Operand =
-                        planetbaseScopeTitleGameStateReplacementConstructor;
-
-                    //Remove bad references
-                    var mscorlib4Reference = planetbaseModule.AssemblyReferences.First(assembly =>
-                        assembly.Name.Equals("mscorlib") && assembly.Version.Equals(new Version(4, 0, 0, 0)));
-                    planetbaseModule.AssemblyReferences.Remove(mscorlib4Reference);
-
-                    var planetbaseFrameworkReference =
-                        planetbaseModule.AssemblyReferences.First(reference =>
-                            reference.Name.Equals("Assembly-CSharp"));
-                    planetbaseModule.AssemblyReferences.Remove(planetbaseFrameworkReference);
-
-                    //Set the .NET version to 4.0.0.0
-                    var mscorlibReference =
-                        planetbaseModule.AssemblyReferences.First(assembly =>
-                            assembly.Name.Equals("mscorlib") && assembly.Version.Equals(new Version(2, 0, 5, 0)));
-                    mscorlibReference.Version = new Version(4, 0, 0, 0);
-                    mscorlibReference.PublicKeyToken = null;
-
-                    //Save the file
-                    planetbaseModule.Write($"{AssemblyFolder}Assembly-CSharp-Patched.dll");
-                }
+                //Patch the game assembly
+                PatchBuilder.Patch(
+                    assemblyPath,
+                    FirstPassPathBox.Text,
+                    UnityEnginePathBox.Text,
+                    UIPathBox.Text,
+                    frameworkPath,
+                    patchedAssemblyPath
+                );
 
                 //Replace the file
-                File.Delete(AssemblyPathBox.Text);
-                File.Move($"{AssemblyFolder}Assembly-CSharp-Patched.dll", AssemblyPathBox.Text);
+                File.Delete(assemblyPath);
+                File.Move(patchedAssemblyPath, assemblyPath);
             }
             catch (InvalidOperationException)
             {
@@ -426,7 +323,7 @@ namespace PatcherTest
 
         private void Fail(string message)
         {
-            if(message != null) MessageBox.Show(message);
+            if (message != null) MessageBox.Show(message);
             SetButtonsEnabled(true);
             ProgressBar.Value = ProgressBar.Minimum;
         }
