@@ -9,7 +9,7 @@ namespace Patcher
 {
     public class PatchBuilder
     {
-        public const string Version = "2.4.0.0";
+        public const string Version = "2.5.0.0";
 
         /// <summary>
         /// Patch the assembly
@@ -64,7 +64,7 @@ namespace Patcher
             var frameworkModule = frameworkAssembly.MainModule;
 
             var modLoaderType =
-                frameworkModule.Types.First(type => type.FullName.Equals("PlanetbaseFramework.Modloader"));
+                frameworkModule.Types.First(type => type.FullName.Equals("PlanetbaseFramework.ModLoader"));
 
             AddModInitializationCall(gameManagerType, modLoaderType, planetbaseModule);
             AddModUpdateCall(gameManagerType, modLoaderType, planetbaseModule);
@@ -121,22 +121,9 @@ namespace Patcher
         {
             //Get all game types
             var fieldTypes = planetbaseModule.Types
-                .Where(type => type.Namespace.Equals("Planetbase") && type.HasFields && !type.IsEnum)
-                .ToArray();
+                .Where(type => type.Namespace.Equals("Planetbase") && type.HasFields && !type.IsEnum);
 
             SetFieldsToPublic(fieldTypes);
-            UpdateVersionField(fieldTypes);
-        }
-
-        /// <summary>
-        /// Set the version
-        /// </summary>
-        private static void UpdateVersionField(IEnumerable<TypeDefinition> fieldTypes)
-        {
-            var versionField = fieldTypes.First(type => type.Name == "Definitions")
-                .Fields.First(field => field.Name == "VersionNumber");
-
-            versionField.Constant += $" [P {Version}]";
         }
 
         /// <summary>
