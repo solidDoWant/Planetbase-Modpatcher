@@ -219,12 +219,13 @@ namespace Patcher
                     {
                         foreach (var entry in archive.Entries)
                         {
-                            var newFilePath = AssemblyFolder + entry.FullName;
-                            if (File.Exists(newFilePath)) File.Delete(newFilePath);
+                            var newFilePath = Path.Combine(AssemblyFolder, entry.FullName);
 
                             using (var entryStream = entry.Open())
                             using (var extractedFileStream = File.Create(newFilePath))
                             {
+                                if (File.Exists(newFilePath)) File.Delete(newFilePath);
+
                                 entryStream.CopyTo(extractedFileStream);
                                 extractedFileStream.Close();
                             }

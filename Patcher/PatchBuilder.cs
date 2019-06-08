@@ -9,7 +9,7 @@ namespace Patcher
 {
     public class PatchBuilder
     {
-        public const string Version = "2.5.0.0";
+        public const string Version = "2.2.0.0";
 
         /// <summary>
         /// Patch the assembly
