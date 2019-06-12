@@ -9,7 +9,7 @@ namespace Patcher
 {
     public class PatchBuilder
     {
-        public const string Version = "2.2.0.0";
+        public const string Version = "2.3.0.0";
 
         /// <summary>
         /// Patch the assembly
@@ -30,6 +30,7 @@ namespace Patcher
                     AddFrameworkReference(frameworkAssembly, planetbaseModule);
                     AddModCalls(frameworkAssembly, planetbaseModule);
 
+                    UpdateTypes(planetbaseModule);
                     UpdateFields(planetbaseModule);
                     UpdateMethods(planetbaseModule);
 
@@ -67,7 +68,6 @@ namespace Patcher
                 frameworkModule.Types.First(type => type.FullName.Equals("PlanetbaseFramework.ModLoader"));
 
             AddModInitializationCall(gameManagerType, modLoaderType, planetbaseModule);
-            AddModUpdateCall(gameManagerType, modLoaderType, planetbaseModule);
         }
 
         /// <summary>
@@ -78,7 +78,6 @@ namespace Patcher
         {
             var gameMangerConstructor = gameManagerType.Methods.First(method =>
                 method.FullName.Equals("System.Void Planetbase.GameManager::.ctor()"));
-
             
             var loadModMethodDefinition = modLoaderType.Methods.First(method => method.Name.Equals("LoadMods"));
 
@@ -94,24 +93,18 @@ namespace Patcher
         }
 
         /// <summary>
-        /// Adds a call to the mod loader updater method
+        /// Update the properties of types
         /// </summary>
-        private static void AddModUpdateCall(TypeDefinition gameManagerType, TypeDefinition modLoaderType, ModuleDefinition planetbaseModule)
+        private static void UpdateTypes(ModuleDefinition planetbaseModule)
         {
-            //Add call to mod loader update method
-            var updateMethod = gameManagerType.Methods.First(method => method.Name.Equals("update"));
-
-            var updateModMethodDefinition =
-                modLoaderType.Methods.First(method => method.Name.Equals("UpdateMods"));
-
-            var planetbaseScopeUpdateModMethodDefinition =
-                planetbaseModule.ImportReference(updateModMethodDefinition);
-
-            var updateModInstruction =
-                Instruction.Create(OpCodes.Call, planetbaseScopeUpdateModMethodDefinition);
-
-            updateMethod.Body.Instructions.Insert(updateMethod.Body.Instructions.Count - 1,
-                updateModInstruction);
+            var matchedTypes = planetbaseModule.Types
+                .Where(type => type.Namespace.Equals("Planetbase"))
+                .SelectManyRecursive(type => type.NestedTypes);
+            
+            foreach (var gameType in matchedTypes)
+            {
+                gameType.IsPublic = true;
+            }
         }
 
         /// <summary>

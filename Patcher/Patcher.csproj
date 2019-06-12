@@ -59,6 +59,7 @@
     <Reference Include="System.Windows.Forms" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="LINQExtentions.cs" />
     <Compile Include="PatchBuilder.cs" />
     <Compile Include="PatcherWindow.cs">
       <SubType>Form</SubType>
